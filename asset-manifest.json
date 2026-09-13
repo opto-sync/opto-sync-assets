@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "package": "opto-sync/opto-sync-assets",
+  "assets": [
+    {
+      "path": "branding/app-logo.png",
+      "mediaType": "image/png",
+      "sha256": "0e9dd79fc3401d09fc766ff9532cff1942c3b4e160e6ecb116cabe37951ad312",
+      "bytes": 1023867,
+      "width": 1254,
+      "height": 1254,
+      "role": "app-launcher-source",
+      "brandApproval": "pending"
+    }
+  ]
+}
