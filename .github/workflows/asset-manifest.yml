@@ -1,0 +1,59 @@
+name: Asset manifest integrity
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  manifest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Reject stale, duplicate or unsafe asset declarations
+        shell: bash
+        run: |
+          set -euo pipefail
+          file="branding/manifest.v1.json"
+          jq -e '
+            .schema == "opto-sync.asset-manifest.v1"
+            and .version == 1
+            and (.assets | type == "array" and length > 0)
+            and ([.assets[].id] | unique | length) == (.assets | length)
+            and ([.assets[].path] | unique | length) == (.assets | length)
+            and all(.assets[];
+              (.id | type == "string" and length > 0)
+              and (.path | type == "string" and test("^branding/[a-z0-9._/-]+\\.(png|svg|webp)$") and (contains("..") | not))
+              and (.mediaType | type == "string")
+              and (.altText | type == "string" and length > 0)
+              and (.gitBlobSha | type == "string" and test("^[0-9a-f]{40}$"))
+            )
+          ' "$file" >/dev/null
+
+          jq -c '.assets[]' "$file" | while IFS= read -r asset; do
+            path="$(jq -r '.path' <<< "$asset")"
+            media_type="$(jq -r '.mediaType' <<< "$asset")"
+            expected="$(jq -r '.gitBlobSha' <<< "$asset")"
+            case "$path:$media_type" in
+              *.png:image/png|*.svg:image/svg+xml|*.webp:image/webp) ;;
+              *) echo "Asset type mismatch: $path" >&2; exit 1 ;;
+            esac
+            test -f "$path"
+            mode="$(git ls-files --stage -- "$path" | awk '{print $1}')"
+            case "$mode" in
+              100644|100755) ;;
+              *) echo "Untracked or non-regular asset: $path" >&2; exit 1 ;;
+            esac
+            actual="$(git hash-object -- "$path")"
+            if [[ "$actual" != "$expected" ]]; then
+              echo "Asset blob integrity mismatch: $path" >&2
+              exit 1
+            fi
+          done
