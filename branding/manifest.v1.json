@@ -1,0 +1,13 @@
+{
+  "schema": "opto-sync.asset-manifest.v1",
+  "version": 1,
+  "assets": [
+    {
+      "id": "app-logo",
+      "path": "branding/app-logo.png",
+      "mediaType": "image/png",
+      "gitBlobSha": "8feb3115e9b8ed8ad21adf1461b039aeb422025a",
+      "altText": "Opto Sync application logo"
+    }
+  ]
+}
